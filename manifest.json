@@ -1,0 +1,27 @@
+{
+  "name": "Voxel Game Web",
+  "short_name": "VoxelGame",
+  "description": "A Minecraft-like voxel game optimized for web and mobile",
+  "version": "0.0.1",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a1a1a",
+  "theme_color": "#4CAF50",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
