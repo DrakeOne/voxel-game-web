@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Voxel Game - WebGL Optimized</title>
+    <link rel="stylesheet" href="css/main.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="js/main.js" as="script">
+    <link rel="preload" href="assets/textures/atlas.png" as="image">
+    
+    <!-- PWA manifest for mobile -->
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas" touch-action="none"></canvas>
+    
+    <!-- Version Display -->
+    <div id="versionDisplay" class="version-display">v0.0.1</div>
+    
+    <!-- Mobile HUD -->
+    <div id="mobileHUD" class="mobile-hud">
+        <!-- Touch Joystick -->
+        <div id="joystickContainer" class="joystick-container">
+            <div id="joystickBase" class="joystick-base">
+                <div id="joystickKnob" class="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div id="actionButtons" class="action-buttons">
+            <button id="jumpBtn" class="action-btn" aria-label="Jump">⬆</button>
+            <button id="breakBtn" class="action-btn" aria-label="Break">✊</button>
+            <button id="placeBtn" class="action-btn" aria-label="Place">✋</button>
+        </div>
+        
+        <!-- Inventory Bar -->
+        <div id="inventoryBar" class="inventory-bar">
+            <div class="inventory-slot active" data-slot="0"></div>
+            <div class="inventory-slot" data-slot="1"></div>
+            <div class="inventory-slot" data-slot="2"></div>
+            <div class="inventory-slot" data-slot="3"></div>
+            <div class="inventory-slot" data-slot="4"></div>
+            <div class="inventory-slot" data-slot="5"></div>
+            <div class="inventory-slot" data-slot="6"></div>
+            <div class="inventory-slot" data-slot="7"></div>
+            <div class="inventory-slot" data-slot="8"></div>
+        </div>
+    </div>
+    
+    <!-- Performance Stats -->
+    <div id="stats" class="stats-display">
+        <div id="fps">FPS: 0</div>
+        <div id="chunks">Chunks: 0</div>
+        <div id="vertices">Vertices: 0</div>
+        <div id="drawCalls">Draw Calls: 0</div>
+    </div>
+    
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <h1>Voxel Game</h1>
+            <div class="loading-bar">
+                <div id="loadingProgress" class="loading-progress"></div>
+            </div>
+            <p id="loadingText">Initializing WebGL...</p>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
