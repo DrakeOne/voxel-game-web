@@ -4,12 +4,31 @@
  * Optimized for maximum performance on web and mobile
  */
 
-import { Engine } from './core/Engine.js';
-import { World } from './world/World.js';
-import { Player } from './player/Player.js';
-import { HUD } from './ui/HUD.js';
-import { TouchControls } from './ui/TouchControls.js';
-import { ObjectPool } from './optimization/ObjectPool.js';
+// Import modules with proper error handling
+const loadModules = async () => {
+    try {
+        const modules = await Promise.all([
+            import('./core/Engine.js'),
+            import('./world/World.js'),
+            import('./player/Player.js'),
+            import('./ui/HUD.js'),
+            import('./ui/TouchControls.js'),
+            import('./optimization/ObjectPool.js')
+        ]);
+        
+        return {
+            Engine: modules[0].Engine,
+            World: modules[1].World,
+            Player: modules[2].Player,
+            HUD: modules[3].HUD,
+            TouchControls: modules[4].TouchControls,
+            ObjectPool: modules[5].ObjectPool
+        };
+    } catch (error) {
+        console.error('Failed to load modules:', error);
+        throw error;
+    }
+};
 
 // Game configuration with performance settings
 const CONFIG = {
@@ -53,7 +72,8 @@ const PERFORMANCE = {
 };
 
 class VoxelGame {
-    constructor() {
+    constructor(modules) {
+        this.modules = modules;
         this.config = { ...CONFIG };
         this.performance = { ...PERFORMANCE };
         this.isRunning = false;
@@ -88,11 +108,13 @@ class VoxelGame {
      * Initialize object pools for memory management
      */
     initializeObjectPools() {
+        const { ObjectPool } = this.modules;
+        
         this.pools = {
-            vectors: new ObjectPool(() => ({ x: 0, y: 0, z: 0 }), 1000),
-            matrices: new ObjectPool(() => new Float32Array(16), 100),
-            chunks: new ObjectPool(() => ({}), 50),
-            particles: new ObjectPool(() => ({}), 500)
+            vectors: new ObjectPool(() => ({ x: 0, y: 0, z: 0 }), null, 1000),
+            matrices: new ObjectPool(() => new Float32Array(16), null, 100),
+            chunks: new ObjectPool(() => ({}), null, 50),
+            particles: new ObjectPool(() => ({}), null, 500)
         };
     }
     
@@ -142,6 +164,7 @@ class VoxelGame {
             this.updateLoadingProgress(20, 'Creating game engine...');
             
             // Initialize game engine
+            const { Engine } = this.modules;
             this.engine = new Engine(this.gl, this.config, this.isWebGL2);
             await this.engine.init();
             
@@ -149,6 +172,7 @@ class VoxelGame {
             this.updateLoadingProgress(40, 'Generating world...');
             
             // Initialize world
+            const { World } = this.modules;
             this.world = new World(this.config, this.pools);
             await this.world.init();
             
@@ -156,6 +180,7 @@ class VoxelGame {
             this.updateLoadingProgress(60, 'Creating player...');
             
             // Initialize player
+            const { Player } = this.modules;
             this.player = new Player(this.world, this.config);
             this.player.init();
             
@@ -163,11 +188,13 @@ class VoxelGame {
             this.updateLoadingProgress(80, 'Setting up controls...');
             
             // Initialize HUD
+            const { HUD } = this.modules;
             this.hud = new HUD(this.config, this.isMobile);
             this.hud.init();
             
             // Initialize controls
             if (this.isMobile) {
+                const { TouchControls } = this.modules;
                 this.touchControls = new TouchControls(this.player, this.config);
                 this.touchControls.init();
             }
@@ -237,7 +264,9 @@ class VoxelGame {
             this.canvas.requestPointerLock = this.canvas.requestPointerLock ||
                                            this.canvas.mozRequestPointerLock ||
                                            this.canvas.webkitRequestPointerLock;
-            this.canvas.requestPointerLock();
+            if (this.canvas.requestPointerLock) {
+                this.canvas.requestPointerLock();
+            }
         }
     }
     
@@ -249,18 +278,21 @@ class VoxelGame {
                         document.mozPointerLockElement === this.canvas ||
                         document.webkitPointerLockElement === this.canvas;
         
-        this.player.setPointerLocked(isLocked);
+        if (this.player) {
+            this.player.setPointerLocked(isLocked);
+        }
     }
     
     /**
      * Handle keyboard input
      */
     handleKeyDown(event) {
-        if (this.isPaused) return;
+        if (this.isPaused || !this.player) return;
         this.player.handleKeyDown(event.code);
     }
     
     handleKeyUp(event) {
+        if (!this.player) return;
         this.player.handleKeyUp(event.code);
     }
     
@@ -268,7 +300,7 @@ class VoxelGame {
      * Handle mouse movement
      */
     handleMouseMove(event) {
-        if (this.isPaused || !document.pointerLockElement) return;
+        if (this.isPaused || !document.pointerLockElement || !this.player) return;
         
         const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
@@ -280,11 +312,12 @@ class VoxelGame {
      * Handle mouse buttons
      */
     handleMouseDown(event) {
-        if (this.isPaused) return;
+        if (this.isPaused || !this.player) return;
         this.player.handleMouseDown(event.button);
     }
     
     handleMouseUp(event) {
+        if (!this.player) return;
         this.player.handleMouseUp(event.button);
     }
     
@@ -362,13 +395,19 @@ class VoxelGame {
      */
     update(deltaTime) {
         // Update player
-        this.player.update(deltaTime);
+        if (this.player) {
+            this.player.update(deltaTime);
+        }
         
         // Update world
-        this.world.update(this.player.position, deltaTime);
+        if (this.world && this.player) {
+            this.world.update(this.player.position, deltaTime);
+        }
         
         // Update HUD
-        this.hud.update(this.performance, this.player);
+        if (this.hud) {
+            this.hud.update(this.performance, this.player);
+        }
         
         // Update touch controls if mobile
         if (this.isMobile && this.touchControls) {
@@ -380,6 +419,8 @@ class VoxelGame {
      * Render frame
      */
     render(deltaTime) {
+        if (!this.engine || !this.world || !this.player) return;
+        
         // Clear frame
         this.engine.clear();
         
@@ -387,12 +428,16 @@ class VoxelGame {
         const renderStats = this.engine.renderWorld(this.world, this.player.camera);
         
         // Update performance metrics
-        this.performance.drawCalls = renderStats.drawCalls;
-        this.performance.vertices = renderStats.vertices;
-        this.performance.chunks = renderStats.chunks;
+        if (renderStats) {
+            this.performance.drawCalls = renderStats.drawCalls;
+            this.performance.vertices = renderStats.vertices;
+            this.performance.chunks = renderStats.chunks;
+        }
         
         // Render HUD elements
-        this.engine.renderHUD(this.hud);
+        if (this.hud) {
+            this.engine.renderHUD(this.hud);
+        }
     }
     
     /**
@@ -415,9 +460,20 @@ class VoxelGame {
             }
             
             // Update other stats
-            document.getElementById('chunks').textContent = `Chunks: ${this.performance.chunks}`;
-            document.getElementById('vertices').textContent = `Vertices: ${this.performance.vertices.toLocaleString()}`;
-            document.getElementById('drawCalls').textContent = `Draw Calls: ${this.performance.drawCalls}`;
+            const chunksElement = document.getElementById('chunks');
+            if (chunksElement) {
+                chunksElement.textContent = `Chunks: ${this.performance.chunks}`;
+            }
+            
+            const verticesElement = document.getElementById('vertices');
+            if (verticesElement) {
+                verticesElement.textContent = `Vertices: ${this.performance.vertices.toLocaleString()}`;
+            }
+            
+            const drawCallsElement = document.getElementById('drawCalls');
+            if (drawCallsElement) {
+                drawCallsElement.textContent = `Draw Calls: ${this.performance.drawCalls}`;
+            }
         }
     }
     
@@ -601,20 +657,37 @@ class VoxelGame {
 }
 
 // Initialize game when DOM is ready
+async function initGame() {
+    try {
+        // Load all modules first
+        console.log('Loading game modules...');
+        const modules = await loadModules();
+        
+        // Create game instance
+        console.log('Creating game instance...');
+        window.game = new VoxelGame(modules);
+        
+        // Initialize game
+        console.log('Initializing game...');
+        await window.game.init();
+        
+    } catch (error) {
+        console.error('Failed to initialize game:', error);
+        
+        // Show error on loading screen
+        const loadingText = document.getElementById('loadingText');
+        if (loadingText) {
+            loadingText.textContent = `Error: ${error.message}`;
+            loadingText.style.color = '#f44336';
+        }
+    }
+}
+
+// Start initialization when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initGame);
 } else {
     initGame();
-}
-
-function initGame() {
-    // Create game instance
-    window.game = new VoxelGame();
-    
-    // Initialize game
-    window.game.init().catch(error => {
-        console.error('Failed to initialize game:', error);
-    });
 }
 
 // Export for module usage
